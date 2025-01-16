@@ -7,7 +7,7 @@ Original author:
 Edited by:
     Lior Thornton
 
-This file contains the following functions:
+Functions:
 
     * success - creates a RESTful success response
     * error - creates an RESTful error response

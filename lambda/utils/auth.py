@@ -22,7 +22,7 @@ import bcrypt
 import jwt
 
 
-def hash_password(password: str, salt_rounds: int=12):
+def hash_password(password: str, salt_rounds: int = 12):
     """Hashes a password.
 
     Args:
@@ -57,13 +57,14 @@ def check_password(password: str, hashed: str):
     return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
 
 
-def generate_token(user_id: str, secret: str, exp_minutes: int=60):
+def generate_token(user_id: str, secret: str, exp_minutes: int = 60):
     """Generates an access token for a user.
 
     Args:
         user_id (str): The user's unique ID.
         secret (str): The secret key to encrypt the token with.
-        exp_minutes (int): The number of minutes until the token expires. Defaults to 60.
+        exp_minutes (int): The number of minutes until the token expires.
+            Defaults to 60.
 
     Returns:
         str: The access token.
@@ -71,7 +72,8 @@ def generate_token(user_id: str, secret: str, exp_minutes: int=60):
     return jwt.encode(
         {
             "user_id": user_id,
-            "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=exp_minutes),
+            "exp": datetime.datetime.now(datetime.UTC)
+            + datetime.timedelta(minutes=exp_minutes),
         },
         secret,
         algorithm="HS256",
