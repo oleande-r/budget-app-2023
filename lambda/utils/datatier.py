@@ -64,7 +64,7 @@ def retrieve_one_row(db_conn, sql, parameters: list[object] = []):
 
     try:
         db_cursor.execute(sql, parameters)
-        row = db_cursor.fetchone()
+        row: tuple = db_cursor.fetchone()
         # If row is none, the query was successfully executed but no data was retrieved.
         if row is None:
             return ()
