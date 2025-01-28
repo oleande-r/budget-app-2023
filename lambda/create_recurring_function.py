@@ -1,6 +1,6 @@
-"""Handles the event that a `POST: /create/budget-category` request is received.
+"""Handles the event that a `POST: /create/recurring-payment` request is received.
 
-This creates a specified budget category for the user.
+This creates a recurring payment for the specified user.
 """
 
 import json
@@ -11,7 +11,7 @@ from utils import datatier, auth, api_utils
 
 
 def lambda_handler(event, context):
-    """Creates a new budget category for the current user.
+    """Creates a recurring payment for the current user.
 
     Args:
         event (dict): A JSON representation of the HTTP request.
@@ -23,7 +23,7 @@ def lambda_handler(event, context):
     """
     try:
         print("**STARTING**")
-        print("**Lambda: Create Budget Category**")
+        print("**Lambda: Create Recurring Payment**")
 
         #
         # Setup AWS based on config file.
@@ -45,7 +45,7 @@ def lambda_handler(event, context):
         secret = configur.get("secret", "key")
 
         #
-        # Read the name and budget from the event body.
+        # Read the transaction information from the event body.
         #
         print("**Accessing request body**")
 
@@ -54,14 +54,20 @@ def lambda_handler(event, context):
 
         body = json.loads(event["body"])
 
-        if "name" not in body or "budget" not in body:
-            return api_utils.error(400, "missing name or budget")
+        if (
+            "name" not in body
+            or "cost" not in body
+            or "date" not in body
+            or "category" not in body
+        ):
+            return api_utils.error(400, "missing name, cost, date, or category")
 
         if "headers" not in event:
             return api_utils.error(400, "no headers in request")
 
         headers = event["headers"]
         token: str = auth.get_token_from_header(headers)  # type: ignore
+
         if token is None:
             api_utils.error(401, "no bearer token in headers")
 
@@ -71,7 +77,9 @@ def lambda_handler(event, context):
             return api_utils.error(401, "invalid access token: " + token)
 
         name = body["name"]
-        budget = body["budget"]
+        cost = body["cost"]
+        date = body["date"]
+        category = body["category"]
 
         #
         # Open connection to the database.
@@ -90,11 +98,11 @@ def lambda_handler(event, context):
             return api_utils.error(404, "no such user")
 
         sql = """
-        INSERT INTO categories (category, userid, totalbudget, spent)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO recurringpayments (paymentname, userid, category, cost, duedate)
+        VALUES (%s, %s, %s, %s, %s)
         """
 
-        datatier.perform_action(db_conn, sql, [name, userid, budget, 0])
+        datatier.perform_action(db_conn, sql, [name, userid, category, cost, date])
 
         #
         # Respond in an HTTP-like way, i.e. with a status

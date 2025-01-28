@@ -1,6 +1,6 @@
-"""Handles the event that a `POST: /create/budget-category` request is received.
+"""Handles the event that a `POST: /create/transaction` request is received.
 
-This creates a specified budget category for the user.
+This creates a transaction for the specified user.
 """
 
 import json
@@ -11,7 +11,7 @@ from utils import datatier, auth, api_utils
 
 
 def lambda_handler(event, context):
-    """Creates a new budget category for the current user.
+    """Creates a new transaction for the current user.
 
     Args:
         event (dict): A JSON representation of the HTTP request.
@@ -19,11 +19,12 @@ def lambda_handler(event, context):
             function, and runtime environment.
 
     Returns:
-        dict: The success response containing an `access_token` or an error response.
+        dict: The success response containing `total_budget` and `spent` or an error
+            response.
     """
     try:
         print("**STARTING**")
-        print("**Lambda: Create Budget Category**")
+        print("**Lambda: Create Transaction**")
 
         #
         # Setup AWS based on config file.
@@ -45,7 +46,7 @@ def lambda_handler(event, context):
         secret = configur.get("secret", "key")
 
         #
-        # Read the name and budget from the event body.
+        # Read the transaction information from the event body.
         #
         print("**Accessing request body**")
 
@@ -54,14 +55,15 @@ def lambda_handler(event, context):
 
         body = json.loads(event["body"])
 
-        if "name" not in body or "budget" not in body:
-            return api_utils.error(400, "missing name or budget")
+        if "cost" not in body or "category" not in body or "date" not in body:
+            return api_utils.error(400, "missing cost, category, or date")
 
         if "headers" not in event:
             return api_utils.error(400, "no headers in request")
 
         headers = event["headers"]
         token: str = auth.get_token_from_header(headers)  # type: ignore
+
         if token is None:
             api_utils.error(401, "no bearer token in headers")
 
@@ -71,7 +73,9 @@ def lambda_handler(event, context):
             return api_utils.error(401, "invalid access token: " + token)
 
         name = body["name"]
-        budget = body["budget"]
+        cost = body["cost"]
+        category = body["category"]
+        date = body["date"]
 
         #
         # Open connection to the database.
@@ -82,26 +86,42 @@ def lambda_handler(event, context):
         )
 
         print("**Checking if userid is valid**")
-        sql = "SELECT * FROM users WHERE userid = %s;"
-        row = datatier.retrieve_one_row(db_conn, sql, [userid])
+        sql = """
+        SELECT totalbudget, spent
+        FROM categories
+        WHERE userid = %s
+        AND category = %s;
+        """
+        row = datatier.retrieve_one_row(db_conn, sql, [userid, category])
 
         if row == ():  # no such user
             print("**No such user, returning...**")
             return api_utils.error(404, "no such user")
 
-        sql = """
-        INSERT INTO categories (category, userid, totalbudget, spent)
-        VALUES (%s, %s, %s, %s)
+        totalbudget = row[0]
+        spent = row[1] + cost
+
+        sql1 = """
+        INSERT INTO transactions (userid, name, cost, category, transactiondate)
+        VALUES (%s,%s, %s, %s, %s)
         """
 
-        datatier.perform_action(db_conn, sql, [name, userid, budget, 0])
+        sql2 = """
+        UPDATE categories
+        SET spent = %s
+        WHERE userid = %s
+        AND category = %s
+        """
+
+        datatier.perform_action(db_conn, sql1, [userid, name, cost, category, date])
+        datatier.perform_action(db_conn, sql2, [spent, userid, category])
 
         #
         # Respond in an HTTP-like way, i.e. with a status
         # code and body in JSON format.
         #
         print("**DONE, returning token**")
-        return api_utils.success(200, {"access_token": token})
+        return api_utils.success(200, {"totalbudget": totalbudget, "spent": spent})
 
     except Exception as err:
         print("**ERROR**")

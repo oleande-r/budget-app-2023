@@ -1,6 +1,6 @@
-"""Handles the event that a `POST: /create/budget-category` request is received.
+"""Handles the event that a `POST: /update/budget-category` request is received.
 
-This creates a specified budget category for the user.
+This updates the total budget of a given category.
 """
 
 import json
@@ -11,7 +11,7 @@ from utils import datatier, auth, api_utils
 
 
 def lambda_handler(event, context):
-    """Creates a new budget category for the current user.
+    """Updates the total budget of a given category.
 
     Args:
         event (dict): A JSON representation of the HTTP request.
@@ -19,11 +19,11 @@ def lambda_handler(event, context):
             function, and runtime environment.
 
     Returns:
-        dict: The success response containing an `access_token` or an error response.
+        dict: The success response containing `spent` or an error response.
     """
     try:
         print("**STARTING**")
-        print("**Lambda: Create Budget Category**")
+        print("**Lambda: Update Budget Category**")
 
         #
         # Setup AWS based on config file.
@@ -45,23 +45,15 @@ def lambda_handler(event, context):
         secret = configur.get("secret", "key")
 
         #
-        # Read the name and budget from the event body.
+        # Read the token from the event body.
         #
-        print("**Accessing request body**")
-
-        if "body" not in event:
-            return api_utils.error(400, "no body in request")
-
-        body = json.loads(event["body"])
-
-        if "name" not in body or "budget" not in body:
-            return api_utils.error(400, "missing name or budget")
-
+        print("**Accessing request headers**")
         if "headers" not in event:
             return api_utils.error(400, "no headers in request")
 
         headers = event["headers"]
         token: str = auth.get_token_from_header(headers)  # type: ignore
+
         if token is None:
             api_utils.error(401, "no bearer token in headers")
 
@@ -70,8 +62,19 @@ def lambda_handler(event, context):
         except Exception as _:
             return api_utils.error(401, "invalid access token: " + token)
 
-        name = body["name"]
+        #
+        # Read budget from the event body.
+        #
+        if "body" not in event:
+            return api_utils.error(400, "no body in request")
+
+        body = json.loads(event["body"])
+
+        if "budget" not in body or "category" not in body:
+            return api_utils.error(400, "missing category or new budget")
+
         budget = body["budget"]
+        category = body["category"]
 
         #
         # Open connection to the database.
@@ -81,27 +84,39 @@ def lambda_handler(event, context):
             rds_endpoint, rds_portnum, rds_username, rds_pwd, rds_dbname
         )
 
-        print("**Checking if userid is valid**")
-        sql = "SELECT * FROM users WHERE userid = %s;"
-        row = datatier.retrieve_one_row(db_conn, sql, [userid])
+        print("**Checking if userid is valid and getting current spent**")
+        sql = """
+        SELECT spent
+        FROM categories
+        WHERE userid = %s
+        AND category = %s
+        """
+        row = datatier.retrieve_one_row(db_conn, sql, [userid, category])
 
         if row == ():  # no such user
             print("**No such user, returning...**")
             return api_utils.error(404, "no such user")
 
-        sql = """
-        INSERT INTO categories (category, userid, totalbudget, spent)
-        VALUES (%s, %s, %s, %s)
+        spent = row[0]
+
+        #
+        # Update category's totalbudget column.
+        #
+        query_1 = """
+        UPDATE categories
+        SET totalbudget = %s
+        WHERE userid = %s
+        AND category = %s;
         """
 
-        datatier.perform_action(db_conn, sql, [name, userid, budget, 0])
+        datatier.perform_action(db_conn, query_1, [budget, userid, category])
 
         #
         # Respond in an HTTP-like way, i.e. with a status
         # code and body in JSON format.
         #
-        print("**DONE, returning token**")
-        return api_utils.success(200, {"access_token": token})
+        print("**DONE, returning sum and top three transactions**")
+        return api_utils.success(200, {"spent": spent})
 
     except Exception as err:
         print("**ERROR**")

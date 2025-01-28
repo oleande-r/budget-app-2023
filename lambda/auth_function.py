@@ -101,7 +101,6 @@ def lambda_handler(event, context):
         # code and body in JSON format.
         #
         print("**DONE, returning token**")
-
         return api_utils.success(200, {"access_token": token})
 
     except Exception as err:
