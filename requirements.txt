@@ -1,3 +1,4 @@
 bcrypt
 pyjwt
 pymysql
+requests
