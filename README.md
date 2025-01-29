@@ -28,11 +28,13 @@ The method requests are shown in the schema above. Provided here are more in-dep
 **Example Response**:
 
 ```python
+{
     "statusCode": 200,
     "body": {
         "totalbudget": 250,
         "spent": 0,
         }
+}
 ```
 
 ### /overview
