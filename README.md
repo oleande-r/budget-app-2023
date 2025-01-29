@@ -21,6 +21,7 @@ The method requests are shown in the schema above. Provided here are more in-dep
 > Create has sub methods that specify what exactly is being created. One of these is `/create/transaction`, which specifies that a new transaction is being created for the user.
 
 **HTTP Method**: PUT
+
 **Example Response**:
 
 ```python
@@ -38,6 +39,7 @@ The method requests are shown in the schema above. Provided here are more in-dep
 > Overview provides a summary of the user's transactions. This includes the sum of all transaction costs, the top three most expensive transactions, and the specified range from which these transactions were pulled.
 
 **HTTP Method**: GET
+
 **Example Response**:
 
 ```python
