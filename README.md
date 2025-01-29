@@ -2,13 +2,9 @@
 
 > Developed by Lior Thornton and Sean Carlson
 
-This was a simple, manual budgeting application built utilizing Amazon AWS API Gateway, Lambda, and RDS. Both the client-side application and the lambda functions hosted on AWS were built using Python.
+This was a simple, manual budgeting application built utilizing Amazon AWS API Gateway, Lambda, and RDS. Both the client-side application and the lambda functions hosted on AWS were built using Python. Using the client, a user is able to issue requests to the server via the AWS Web Server and manage their finances through the creation, altering, and deletion of multiple budget categories and financial transactions.
 
-Using the client, a user is able to issue requests to the server via the AWS Web Server and manage their finances through the creation, altering, and deletion of multiple budget categories and financial transactions.
-
-Originally created in 2023, this project is now deprecated and its functioning cannot be guaranteed. Since then, the code has been edited for clarity (better code legibility, inclusion of docstrings, etc.) and this is what has been documented in this repo.
-
-This refactored code has been provided, plus the MySQL script and config files that would allow you to recreate the application in its entirety.
+Originally created in 2023, this project is now deprecated and its functioning cannot be guaranteed. Since then, the code has been edited for clarity (better code legibility, inclusion of docstrings, etc.) and this is what has been documented in this repo. This refactored code has been provided, plus the MySQL script and config files that would allow you to recreate the application in its entirety.
 
 ## Architecture
 
@@ -60,13 +56,21 @@ The method requests are shown in the schema above. Provided here are more in-dep
 }
 ```
 
-## Improvements
+## Using this Project
+
+To run the budget application, you'd need to create and deploy both an Amazon AWS API Gateway service and an Amazon RDS MySQL database. You'd also need to create the AWS Lambda functions and configure them so they could be triggered by events from the API Gateway.
+
+The lambda functions are labelled in such a way that this is not too difficult to do if you have prior experience with using AWS, and the config files are provided (with placeholders) so that they can be edited to point towards your respective Gateway web service and RDS database endpoint.
+
+From there, using the application requires running `main.py` on your personal PC.
+
+## Future Improvements
 
 This section is a post-mortem of the project. There were issues I discovered as I was refactoring the code, and this a documentation of some of those issues to consider in future projects.
 
 - Separate the Lambda handler from core logic:
   - Amazon recommends this as best practices when using AWS Lambda. The handler should be pulling relevant information from the event object, and then passing that to another function that handles the rest of the logic.
-- Consolidate repeated code
+- Consolidate repeated code:
   - There are a lot of places in the lambda functions— like making sure that the body, headers, etc. exist and throwing a bad request error if they do not— that could've been made into separate utility files to import for use. This would've made for cleaner and more legible code.
-- The `Users` lambda function should be split into two separate functions that handles `GET` and `POST` separately.
+- The `Users` lambda function should be split into two separate functions that handles `GET` and `POST` separately:
   - Doing this would not only make the code more legible, but it also would've made this particular lambda function more RESTful. As it currently exists, this function handles two different HTTP Methods; that is confusing, especially when no other function does.
