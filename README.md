@@ -20,7 +20,7 @@ The method requests are shown in the schema above. Provided here are more in-dep
 
 > Create has sub methods that specify what exactly is being created. One of these is `/create/transaction`, which specifies that a new transaction is being created for the user.
 
-**HTTP Method**: PUT
+**HTTP Method**: POST
 
 **Example Response**:
 
