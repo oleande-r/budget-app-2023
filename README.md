@@ -68,7 +68,7 @@ From there, using the application requires running `main.py` on your personal PC
 
 ## Future Improvements
 
-This section is a post-mortem of the project. There were issues I discovered as I was refactoring the code, and this a documentation of some of those issues to consider in future projects.
+This section is a post-mortem of the project. There were issues I discovered as I was refactoring the code, and this is a documentation of some of those issues to consider in future projects.
 
 - Separate the Lambda handler from core logic:
   - Amazon recommends this as best practices when using AWS Lambda. The handler should be pulling relevant information from the event object, and then passing that to another function that handles the rest of the logic.
